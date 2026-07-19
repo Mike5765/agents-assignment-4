@@ -31,3 +31,6 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+
+# Local build log
+docs/build_log.md

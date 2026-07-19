@@ -1,26 +1,16 @@
 """
-Part 3: Host Agent / Orchestrator (20 points)
+Host Agent / Orchestrator.
 
-Create a SequentialAgent that coordinates between Customer Data Agent and Support Agent
-using the A2A (Agent-to-Agent) protocol.
+A SequentialAgent that coordinates the Customer Data Agent and Support
+Agent over the A2A protocol:
 
-This is the core of the assignment: connecting remote agents via A2A.
-
-Architecture:
   Host Agent (SequentialAgent)
     -> RemoteA2aAgent("customer_data") -- calls Customer Data Agent via A2A
     -> RemoteA2aAgent("support_specialist") -- calls Support Agent via A2A
 
-Requirements:
-  - Import and apply the A2A compatibility patch (CRITICAL) (2 pts)
-  - Create RemoteA2aAgent for Customer Data Agent (6 pts)
-  - Create RemoteA2aAgent for Support Agent (6 pts)
-  - Create SequentialAgent combining both remote agents (6 pts)
-
-Key concepts:
-  - RemoteA2aAgent wraps a remote agent as a local sub-agent
-  - agent_card URL = agent_url + AGENT_CARD_WELL_KNOWN_PATH
-  - SequentialAgent runs sub-agents in order, passing context between them
+RemoteA2aAgent wraps a remote agent as a local sub-agent, discovered via
+its agent card at `agent_url + AGENT_CARD_WELL_KNOWN_PATH`. SequentialAgent
+runs its sub-agents in order, passing context between them.
 """
 
 import sys
@@ -54,48 +44,25 @@ logger = logging.getLogger(__name__)
 
 
 def create_agent() -> SequentialAgent:
-    """
-    Create the Host Agent (Orchestrator).
-
-    TODO: Implement this function to:
-
-    1. Create a RemoteA2aAgent for the Customer Data Agent:
-       - name='customer_data'
-       - description='Access customer and ticket data from MCP server'
-       - agent_card=f'{CUSTOMER_DATA_AGENT_URL}{AGENT_CARD_WELL_KNOWN_PATH}'
-
-    2. Create a RemoteA2aAgent for the Support Agent:
-       - name='support_specialist'
-       - description='Provide customer support and troubleshooting solutions'
-       - agent_card=f'{SUPPORT_AGENT_URL}{AGENT_CARD_WELL_KNOWN_PATH}'
-
-    3. Create and return a SequentialAgent:
-       - name='customer_support_host'
-       - sub_agents=[remote_customer_data, remote_support]
-
-    Example:
-        remote_customer_data = RemoteA2aAgent(
-            name='customer_data',
-            description='Access customer and ticket data from MCP server',
-            agent_card=f'{CUSTOMER_DATA_AGENT_URL}{AGENT_CARD_WELL_KNOWN_PATH}',
-        )
-
-        remote_support = RemoteA2aAgent(
-            name='support_specialist',
-            description='Provide customer support and troubleshooting solutions',
-            agent_card=f'{SUPPORT_AGENT_URL}{AGENT_CARD_WELL_KNOWN_PATH}',
-        )
-
-        return SequentialAgent(
-            name='customer_support_host',
-            sub_agents=[remote_customer_data, remote_support],
-        )
+    """Create the Host Agent (Orchestrator).
 
     Returns:
-        Configured SequentialAgent instance
+        SequentialAgent wrapping remote Customer Data and Support agents
+        as RemoteA2aAgent sub-agents, run in that order.
     """
-    raise NotImplementedError(
-        "TODO: Create the Host Agent with two RemoteA2aAgent sub-agents "
-        "(customer_data and support_specialist) wrapped in a SequentialAgent. "
-        "See the docstring above for the exact structure."
+    remote_customer_data = RemoteA2aAgent(
+        name="customer_data",
+        description="Access customer and ticket data from MCP server",
+        agent_card=f"{CUSTOMER_DATA_AGENT_URL}{AGENT_CARD_WELL_KNOWN_PATH}",
+    )
+
+    remote_support = RemoteA2aAgent(
+        name="support_specialist",
+        description="Provide customer support and troubleshooting solutions",
+        agent_card=f"{SUPPORT_AGENT_URL}{AGENT_CARD_WELL_KNOWN_PATH}",
+    )
+
+    return SequentialAgent(
+        name="customer_support_host",
+        sub_agents=[remote_customer_data, remote_support],
     )

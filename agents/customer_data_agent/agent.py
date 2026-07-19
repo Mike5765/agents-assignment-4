@@ -1,26 +1,8 @@
 """
-Part 2a: Customer Data Agent (15 points)
+Customer Data Agent.
 
-Create an ADK Agent that manages customer and ticket data via McpToolset.
-
-This agent should:
-  - Use the Gemini model from agents_config
-  - Have a descriptive instruction telling the LLM its role and capabilities
-  - Include the customer data McpToolset so it can access customer/ticket data
-
-The McpToolset auto-discovers tools from the MCP server — no manual wrappers needed.
-You configure which tools the agent can access via the tool_filter in the toolset.
-
-Requirements:
-  - create_agent() returns a configured google.adk.agents.Agent (5 pts)
-  - Agent has a detailed instruction string (5 pts)
-  - Agent uses create_customer_data_toolset() (5 pts)
-
-Example instruction topics to cover:
-  - The agent's role (Customer Data specialist)
-  - What tools are available (customer lookup, ticket management, statistics)
-  - How to handle requests (parse, use tools, format response)
-  - Response style (precise, data-driven)
+An ADK Agent that manages customer and ticket data through the customer
+data McpToolset (broad read/write access, see shared/mcp_toolset.py).
 """
 
 import sys
@@ -44,37 +26,48 @@ logger = logging.getLogger(__name__)
 
 
 def create_agent() -> Agent:
-    """
-    Create the Customer Data Agent.
-
-    TODO: Create and return an Agent instance with:
-      1. model=GEMINI_MODEL
-      2. name='customer_data_agent'
-      3. instruction=<your detailed instruction string>
-      4. tools=[create_customer_data_toolset()]
-
-    The McpToolset automatically discovers all filtered tools from the MCP
-    server. You pass the toolset instance in the tools list — ADK handles
-    the rest.
-
-    Example:
-        return Agent(
-            model=GEMINI_MODEL,
-            name='customer_data_agent',
-            instruction=\"\"\"
-            You are the Customer Data Agent...
-            Your capabilities:
-            - Retrieve customer information by ID
-            - List customers with filters
-            ...
-            \"\"\",
-            tools=[create_customer_data_toolset()],
-        )
+    """Create the Customer Data Agent.
 
     Returns:
-        Configured Agent instance
+        Agent configured with the Gemini model, a data-management
+        instruction, and the customer data McpToolset.
     """
-    raise NotImplementedError(
-        "TODO: Create the Customer Data Agent with model, name, instruction, and tools. "
-        "Use tools=[create_customer_data_toolset()] to attach the MCP toolset."
+    return Agent(
+        model=GEMINI_MODEL,
+        name="customer_data_agent",
+        instruction="""
+        You are the Customer Data Agent, a specialist responsible for all direct
+        reads and writes against the customer support database.
+
+        Your capabilities (via MCP tools):
+          - Customer lookup: get_customer, list_customers (filter by status:
+            'active' or 'disabled')
+          - Customer management: add_customer, update_customer, disable_customer,
+            activate_customer
+          - Ticket operations: get_ticket, list_tickets (filter by status, priority,
+            customer_id), create_ticket, update_ticket_status, update_ticket_priority
+          - Statistics and search: get_ticket_stats, get_customer_stats,
+            search_tickets (keyword search over issue descriptions)
+
+        How to handle requests:
+          1. Parse the request to identify which entity (customer or ticket) and
+             which operation (lookup, create, update, stats, search) is needed.
+          2. Call the single most appropriate tool with the exact parameters
+             implied by the request. Do not guess IDs — if a required ID is
+             missing, ask for it or use a lookup tool (e.g. list_customers,
+             search_tickets) to find it first.
+          3. If a request requires multiple steps (e.g. "find the customer named
+             X and list their tickets"), chain tool calls in order rather than
+             fabricating data.
+          4. Never invent customer or ticket data. If a tool call returns an
+             error or empty result, report that plainly instead of making
+             something up.
+
+        Response style:
+          - Be precise and data-driven. Report exact field values returned by
+            tools (IDs, statuses, timestamps) rather than paraphrasing.
+          - Keep responses concise and structured (short prose or a compact
+            list), suitable for another agent or a human to consume directly.
+        """,
+        tools=[create_customer_data_toolset()],
     )
